@@ -45,7 +45,7 @@ class PIDController(Controller):
         for speed_upper_bound, kvalues in config.items():
             speed_upper_bound = float(speed_upper_bound)
             if current_speed < speed_upper_bound:
-                k_p, k_d, k_i = kvalues["Kp"]*.9, kvalues["Kd"]*.5, kvalues["Ki"]*.5
+                k_p, k_d, k_i = kvalues["Kp"]*.9, kvalues["Kd"]*.5, kvalues["Ki"]*.5 #******* lowered gain for smoothness
                 break
         return np.clip([k_p, k_d, k_i], a_min=0, a_max=1)
 
@@ -149,12 +149,12 @@ class LatPIDController(Controller):
 
         k_p, k_d, k_i = PIDController.find_k_values(config=self.config, vehicle=self.agent.vehicle)
         print ('kp, kd, ki: ', k_p, k_d, k_i)
-        # lat_control = float(
-        #     np.clip((k_p * error) + (k_d * _de) + (k_i * _ie), self.steering_boundary[0], self.steering_boundary[1])
-        # )
         lat_control = float(
-            np.clip((k_p * error) + (k_d * _de) + (k_i * _ie), -.9, .9)
+             np.clip((k_p * error) + (k_d * _de) + (k_i * _ie), self.steering_boundary[0], self.steering_boundary[1])
         )
+        # lat_control = float(
+        #     np.clip((k_p * error) + (k_d * _de) + (k_i * _ie), -.9, .9)
+        # )
         # print(f"v_vec_normed: {v_vec_normed} | w_vec_normed = {w_vec_normed}")
         # print("v_vec_normed @ w_vec_normed.T:", v_vec_normed @ w_vec_normed.T)
         # print(f"Curr: {self.agent.vehicle.transform.location}, waypoint: {next_waypoint}")

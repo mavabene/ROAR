@@ -4,7 +4,7 @@ from pathlib import Path
 
 
 class Module(ABC):
-    def __init__(self, threaded=False, update_interval: float = 0.5,
+    def __init__(self, threaded=False, update_interval: float = 0.2,
                  should_save: bool = False, name: str = "module", **kwargs):
         self.threaded = threaded
         self.update_interval = update_interval

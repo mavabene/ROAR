@@ -61,15 +61,14 @@ class PIDController(Controller):
     @staticmethod
     def find_k_values(vehicle: Vehicle, config: dict) -> np.array:
         current_speed = Vehicle.get_speed(vehicle=vehicle)
-        #k_p, k_d, k_i = .03, 0.9, 0  #original values
-        k_p, k_d, k_i,  = .1, 0, 0
-
+        k_p, k_d, k_i = .8, 0, 0
         for speed_upper_bound, kvalues in config.items():
             speed_upper_bound = float(speed_upper_bound)
             if current_speed < speed_upper_bound:
-                k_p, k_d, k_i = kvalues["Kp"], kvalues["Kd"], kvalues["Ki"]
+                k_p, k_d, k_i = kvalues["Kp"]*.9, kvalues["Kd"]*.5, kvalues["Ki"]*.4 #******* lowered gain for smoothness
                 break
         return np.clip([k_p, k_d, k_i], a_min=0, a_max=1)
+
 
 # *** Roll ContRoller v2 ***
 # ***** new version Roll *****
@@ -371,32 +370,40 @@ class LatPIDController(Controller):
 
         #hed_err = .1*self.hd_calc(next_waypoint) # old carla %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         #hed_err = self.hd_calc(next_waypoint)*(47**(abs(self.hd_calc(next_waypoint)))) **2
-        hed_err = self.hd_calc(next_waypoint)/(1+(abs(error))**4)
+        hed_err = self.hd_calc(next_waypoint)/(.1+(abs(error)**2))
         #hed_err = 0
 
-        kle = .2
-        #k_p, k_d, k_i = PIDController.find_k_values(config=self.config, vehicle=self.agent.vehicle)
-        k_p, k_d, k_i = (100,0,0)
+        kle = .04
+        k_p, k_d, k_i = PIDController.find_k_values(config=self.config, vehicle=self.agent.vehicle)
+        #k_p, k_d, k_i = (100,0,0)
 
         print('--lat head error--: ',hed_err)
-        print('--error-- = ',error)
+        print('--distance from path error-- = ',error)
         print('--derivative error--: ',_de)
         print('--integral error--: ',_ie)
         print('kp', k_p)
 
-
+        print('kp, kd, ki: ', k_p, k_d, k_i)
+        errx=.7*(k_p * error) + (k_d * _de) + (k_i * _ie)
+        errhead=(kle * hed_err**3)
         # lat_control = float(
         #     np.clip((k_p * error) + (k_d * _de) + (k_i * _ie) + (kle * hed_err), self.steering_boundary[0], self.steering_boundary[1])
         # )
         lat_control = float(
-            np.clip((k_p * error**9) + (k_d * _de) + (k_i * _ie) + (kle * hed_err), self.steering_boundary[0],
+            np.clip(errx + errhead, self.steering_boundary[0],
                     self.steering_boundary[1])
         )
+
+        # lat_control = float(
+        #     np.clip((k_p*2 * error**3) + (k_d * _de) + (k_i * _ie) + (kle * hed_err), self.steering_boundary[0],
+        #             self.steering_boundary[1])
+        # )
         # lat_control = float(
         #     np.clip((k_p * error ** 3) + (k_d * _de) + (k_i * _ie) + (kle * hed_err), self.steering_boundary[0],
         #             self.steering_boundary[1])
         # ) #smooth path but not enough turning
-
+        print('lat ctrl cross track err:', errx)
+        print('lat ctrl head err: ', errhead)
         # print(f"v_vec_normed: {v_vec_normed} | w_vec_normed = {w_vec_normed}")
         # print("v_vec_normed @ w_vec_normed.T:", v_vec_normed @ w_vec_normed.T)
         # print(f"Curr: {self.agent.vehicle.transform.location}, waypoint: {next_waypoint}")
