@@ -18,7 +18,7 @@ class PIDController(Controller):
                  throttle_boundary: Tuple[float, float], **kwargs):
         super().__init__(agent, **kwargs)
        #self.max_speed = self.agent.agent_settings.max_speed
-        self.max_speed = 180 #************************* MAX SPEED *********************************
+        self.max_speed = 140 #************************* MAX SPEED *********************************
 
         self.throttle_boundary = throttle_boundary
         self.steering_boundary = steering_boundary
@@ -225,7 +225,7 @@ class LongPIDController(Controller):
         # *** next points on path
         # *** averaging path points for smooth path vector ***
 
-        la_indx = 30
+        la_indx = 10
         #la_indx = 1 # old ROAR map %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         # next_pathpoint1 = (self.agent.local_planner.way_points_queue[2*cs+1])
         # next_pathpoint2 = (self.agent.local_planner.way_points_queue[2*cs+2])
@@ -234,9 +234,9 @@ class LongPIDController(Controller):
         # next_pathpoint5 = (self.agent.local_planner.way_points_queue[2*cs+92])
         # next_pathpoint6 = (self.agent.local_planner.way_points_queue[2*cs+93])
 
-        next_pathpoint1 = (self.agent.local_planner.way_points_queue[math.ceil((3*cs+1)/la_indx)])
-        next_pathpoint2 = (self.agent.local_planner.way_points_queue[math.ceil((3*cs+2)/la_indx)])
-        next_pathpoint3 = (self.agent.local_planner.way_points_queue[math.ceil((3*cs+3)/la_indx)])
+        next_pathpoint1 = (self.agent.local_planner.way_points_queue[math.ceil((2*cs+1)/la_indx)])
+        next_pathpoint2 = (self.agent.local_planner.way_points_queue[math.ceil((2*cs+2)/la_indx)])
+        next_pathpoint3 = (self.agent.local_planner.way_points_queue[math.ceil((2*cs+3)/la_indx)])
         next_pathpoint4 = (self.agent.local_planner.way_points_queue[math.ceil((3*cs+51)/la_indx)])
         next_pathpoint5 = (self.agent.local_planner.way_points_queue[math.ceil((3*cs+52)/la_indx)])
         next_pathpoint6 = (self.agent.local_planner.way_points_queue[math.ceil((3*cs+53)/la_indx)])
@@ -260,7 +260,8 @@ class LongPIDController(Controller):
         nz1 = (next_pathpoint1.location.z + next_pathpoint2.location.z + next_pathpoint3.location.z) / 3
         nx2 = (next_pathpoint4.location.x + next_pathpoint5.location.x + next_pathpoint6.location.x) / 3
         nz2 = (next_pathpoint4.location.z + next_pathpoint5.location.z + next_pathpoint6.location.z) / 3
-
+        print('next waypoint: ', self.agent.local_planner.way_points_queue[0])
+        print('$$$$$$$$$$$$$way points length: ',len(self.agent.local_planner.way_points_queue))
         npath0 = np.transpose(np.array([nx0, nz0, 1]))
         npath = np.transpose(np.array([nx, nz, 1]))
         npath1 = np.transpose(np.array([nx1, nz1, 1]))
@@ -355,6 +356,8 @@ class LatPIDController(Controller):
         v_vec_normed = v_vec / np.linalg.norm(v_vec)
         w_vec_normed = w_vec / np.linalg.norm(w_vec)
         error = np.arccos(v_vec_normed @ w_vec_normed.T)
+        error = error*np.abs(error)
+
         _cross = np.cross(v_vec_normed, w_vec_normed)
         if _cross[1] > 0:
             error *= -1
@@ -373,7 +376,7 @@ class LatPIDController(Controller):
         hed_err = self.hd_calc(next_waypoint)/(.1+(abs(error)**2))
         #hed_err = 0
 
-        kle = .04
+        kle = .02
         k_p, k_d, k_i = PIDController.find_k_values(config=self.config, vehicle=self.agent.vehicle)
         #k_p, k_d, k_i = (100,0,0)
 
@@ -384,7 +387,7 @@ class LatPIDController(Controller):
         print('kp', k_p)
 
         print('kp, kd, ki: ', k_p, k_d, k_i)
-        errx=.7*(k_p * error) + (k_d * _de) + (k_i * _ie)
+        errx=.4*(k_p * error) + (k_d * _de) + (k_i * _ie)
         errhead=(kle * hed_err**3)
         # lat_control = float(
         #     np.clip((k_p * error) + (k_d * _de) + (k_i * _ie) + (kle * hed_err), self.steering_boundary[0], self.steering_boundary[1])
@@ -467,8 +470,9 @@ class LatPIDController(Controller):
 
         # *** convert path points to yaw error in veh frame ***
 
-        path_yaw = math.atan2(-(vf_npath2[1]-vf_npath1[1]),-(vf_npath2[0]-vf_npath1[0]))
+        path_yaw = math.atan2(-(vf_npath2[1]-vf_npath1[1]),-(vf_npath2[0]-vf_npath1[0]))#path compared to vehicle frame
         head_err = -np.rad2deg(path_yaw)/180 # - because we want positive yaw to to turn left which is negative vice versa
+
         # hd_err = path_yaw * 180 / np.pi
         # head_err = 0
         # if hd_err > 180:
@@ -477,7 +481,7 @@ class LatPIDController(Controller):
         #     head_err = hd_err + 360
         # else:
         #     head_err = hd_err
-
-        print('** heading error **', head_err)
+        print('** heading error degrees: ', head_err*180)
+        print('** heading error input **', head_err)
 
         return head_err

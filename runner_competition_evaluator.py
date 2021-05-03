@@ -11,7 +11,7 @@ from prettytable import PrettyTable
 
 from ROAR.agent_module.jAM1AgentOld import JAM1Agent_old
 from ROAR.agent_module.jAM3AgentOld import JAM3Agent_old
-
+from ROAR.agent_module.pidroll_agent import PIDRollAgent
 
 
 # old def compute_score(carla_runner: CarlaRunner, min_bounding_box = np.array([0,-2,30]), max_bounding_box = np.array([60,2,60])) -> Tuple[float, int, bool]:
@@ -103,11 +103,13 @@ def main():
     # agent_class = JAM1Agent_old
     # num_trials = 3
 
-    agent_class = PIDAgent
+    agent_class = PIDRollAgent
     num_trials = 1
+    # agent_class = PIDAgent
+    # num_trials = 1
 
     total_score = 0
-    num_laps = 2
+    num_laps = 1
     table = PrettyTable()
     table.field_names = ["time_elapsed (sec)", "num_collisions", "laps completed"]
     for i in range(num_trials):

@@ -93,8 +93,9 @@ class LoopSimpleWaypointFollowingLocalPlanner(LocalPlanner):
                 self._curr_waypoint_index += 1
             else:
                 break
-        target_waypoint = self.way_points_queue[self._curr_waypoint_index]
+        target_waypoint = self.way_points_queue[self._curr_waypoint_index]#*****
         control: VehicleControl = self.controller.run_in_series(next_waypoint=target_waypoint)
+        # self.logger.debug(f"control -> {control} | next waypoint -> {target_waypoint.location}")
         return control
 
     def set_closeness_threhold(self, config: dict):
@@ -104,5 +105,8 @@ class LoopSimpleWaypointFollowingLocalPlanner(LocalPlanner):
             if curr_speed < speed_upper_bound:
                 self.closeness_threshold = closeness_threshold
                 break
+
     def get_curr_waypoint_index(self):
         return self._curr_waypoint_index
+
+   # waypointsqueue[self.get - current - waypoint - index]
