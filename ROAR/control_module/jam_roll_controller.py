@@ -260,7 +260,7 @@ class LongPIDController(Controller):
         nz1 = (next_pathpoint1.location.z + next_pathpoint2.location.z + next_pathpoint3.location.z) / 3
         nx2 = (next_pathpoint4.location.x + next_pathpoint5.location.x + next_pathpoint6.location.x) / 3
         nz2 = (next_pathpoint4.location.z + next_pathpoint5.location.z + next_pathpoint6.location.z) / 3
-        print('next waypoint: ', self.agent.local_planner.way_points_queue[0])
+        print('next waypoint: ', self.agent.local_planner.way_points_queue[self.agent.local_planner.get_curr_waypoint_index()])
         print('$$$$$$$$$$$$$way points length: ',len(self.agent.local_planner.way_points_queue))
         npath0 = np.transpose(np.array([nx0, nz0, 1]))
         npath = np.transpose(np.array([nx, nz, 1]))
@@ -437,8 +437,12 @@ class LatPIDController(Controller):
         # *** next points on path
         # *** averaging path points for smooth path vector ***
         next_pathpoint1 = (self.agent.local_planner.way_points_queue[0])
+        #next_pathpoint1 = (self.agent.local_planner.way_points_queue[self.agent.local_planner.get_current_index])
+
         next_pathpoint2 = (self.agent.local_planner.way_points_queue[0])
         next_pathpoint3 = (self.agent.local_planner.way_points_queue[1])
+        #next_pathpoint1 = (self.agent.local_planner.way_points_queue[self.agent.local_planner.get_curr_waypoint_index+1])
+
         next_pathpoint4 = (self.agent.local_planner.way_points_queue[0])
         next_pathpoint5 = (self.agent.local_planner.way_points_queue[1])
         next_pathpoint6 = (self.agent.local_planner.way_points_queue[2])
