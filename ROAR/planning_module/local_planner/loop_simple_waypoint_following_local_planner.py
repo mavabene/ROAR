@@ -80,7 +80,7 @@ class LoopSimpleWaypointFollowingLocalPlanner(LocalPlanner):
         curr_closest_dist = float("inf")
         while True:
             if len(self.way_points_queue) == self._curr_waypoint_index:
-                self._curr_waypoint_index = 0 + 10  # this is so that i don't actually just look at the zeroth one
+                self._curr_waypoint_index = 0 + 40  # this is so that i don't actually just look at the zeroth one
                 # when i loop back
             waypoint: Transform = self.way_points_queue[self._curr_waypoint_index]
             curr_dist = vehicle_transform.location.distance(waypoint.location)

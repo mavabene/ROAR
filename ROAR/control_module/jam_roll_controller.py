@@ -234,12 +234,30 @@ class LongPIDController(Controller):
         # next_pathpoint5 = (self.agent.local_planner.way_points_queue[2*cs+92])
         # next_pathpoint6 = (self.agent.local_planner.way_points_queue[2*cs+93])
 
-        next_pathpoint1 = (self.agent.local_planner.way_points_queue[math.ceil((2*cs+1)/la_indx)])
-        next_pathpoint2 = (self.agent.local_planner.way_points_queue[math.ceil((2*cs+2)/la_indx)])
-        next_pathpoint3 = (self.agent.local_planner.way_points_queue[math.ceil((2*cs+3)/la_indx)])
-        next_pathpoint4 = (self.agent.local_planner.way_points_queue[math.ceil((3*cs+51)/la_indx)])
-        next_pathpoint5 = (self.agent.local_planner.way_points_queue[math.ceil((3*cs+52)/la_indx)])
-        next_pathpoint6 = (self.agent.local_planner.way_points_queue[math.ceil((3*cs+53)/la_indx)])
+        # *** for Simple waypoint planner (using deque)
+        # next_pathpoint1 = (self.agent.local_planner.way_points_queue[math.ceil((2*cs+1)/la_indx)])
+        # next_pathpoint2 = (self.agent.local_planner.way_points_queue[math.ceil((2*cs+2)/la_indx)])
+        # next_pathpoint3 = (self.agent.local_planner.way_points_queue[math.ceil((2*cs+3)/la_indx)])
+        # next_pathpoint4 = (self.agent.local_planner.way_points_queue[math.ceil((3*cs+51)/la_indx)])
+        # next_pathpoint5 = (self.agent.local_planner.way_points_queue[math.ceil((3*cs+52)/la_indx)])
+        # next_pathpoint6 = (self.agent.local_planner.way_points_queue[math.ceil((3*cs+53)/la_indx)])
+
+        # *** for Loop Simple waypoint planner (using a list):
+        lf1 = math.ceil(2*cs/la_indx)
+        lf2 = math.ceil(2*cs/la_indx)
+        next_pathpoint1 = (self.agent.local_planner.way_points_queue\
+            [self.agent.local_planner.get_curr_waypoint_index()+lf1])
+        next_pathpoint2 = (self.agent.local_planner.way_points_queue\
+            [self.agent.local_planner.get_curr_waypoint_index()+lf1+1])
+        next_pathpoint3 = (self.agent.local_planner.way_points_queue\
+            [self.agent.local_planner.get_curr_waypoint_index()+lf1+2])
+        next_pathpoint4 = (self.agent.local_planner.way_points_queue\
+            [self.agent.local_planner.get_curr_waypoint_index()+lf2+1])
+        next_pathpoint5 = (self.agent.local_planner.way_points_queue\
+            [self.agent.local_planner.get_curr_waypoint_index()+lf2+2])
+        next_pathpoint6 = (self.agent.local_planner.way_points_queue\
+            [self.agent.local_planner.get_curr_waypoint_index()+lf2+3])
+
         # ******************************
         # next_pathpoint4 = (self.agent.local_planner.way_points_queue[cs+43])
         # next_pathpoint5 = (self.agent.local_planner.way_points_queue[cs+42])
@@ -436,16 +454,23 @@ class LatPIDController(Controller):
 
         # *** next points on path
         # *** averaging path points for smooth path vector ***
-        next_pathpoint1 = (self.agent.local_planner.way_points_queue[0])
-        #next_pathpoint1 = (self.agent.local_planner.way_points_queue[self.agent.local_planner.get_current_index])
 
-        next_pathpoint2 = (self.agent.local_planner.way_points_queue[0])
-        next_pathpoint3 = (self.agent.local_planner.way_points_queue[1])
-        #next_pathpoint1 = (self.agent.local_planner.way_points_queue[self.agent.local_planner.get_curr_waypoint_index+1])
+        # *** for Loop waypoint planner (using a list):
+        next_pathpoint1 = (self.agent.local_planner.way_points_queue[self.agent.local_planner.get_curr_waypoint_index()]) #for loop waypoint planner
+        next_pathpoint2 = (self.agent.local_planner.way_points_queue[self.agent.local_planner.get_curr_waypoint_index()+1]) #for loop waypoint planner
+        next_pathpoint3 = (self.agent.local_planner.way_points_queue[self.agent.local_planner.get_curr_waypoint_index()+2])
+        next_pathpoint4 = (self.agent.local_planner.way_points_queue[self.agent.local_planner.get_curr_waypoint_index()+1]) #for loop waypoint planner
+        next_pathpoint5 = (self.agent.local_planner.way_points_queue[self.agent.local_planner.get_curr_waypoint_index()+2]) #for loop waypoint planner
+        next_pathpoint6 = (self.agent.local_planner.way_points_queue[self.agent.local_planner.get_curr_waypoint_index()+3])
 
-        next_pathpoint4 = (self.agent.local_planner.way_points_queue[0])
-        next_pathpoint5 = (self.agent.local_planner.way_points_queue[1])
-        next_pathpoint6 = (self.agent.local_planner.way_points_queue[2])
+        #next_pathpoint1 = (self.agent.local_planner.way_points_queue[0]) #for simple waypoint planner
+        # next_pathpoint2 = (self.agent.local_planner.way_points_queue[0])
+        # next_pathpoint3 = (self.agent.local_planner.way_points_queue[1])
+
+        # *** for Simple waypoint planner (using the deque)
+        # next_pathpoint4 = (self.agent.local_planner.way_points_queue[0])
+        # next_pathpoint5 = (self.agent.local_planner.way_points_queue[1])
+        # next_pathpoint6 = (self.agent.local_planner.way_points_queue[2])
         # next_pathpoint6 = (self.agent.local_planner.way_points_queue[math.ceil(11/lat_indx)])
 
         nx0 = next_pathpoint1.location.x
@@ -475,7 +500,7 @@ class LatPIDController(Controller):
         # *** convert path points to yaw error in veh frame ***
 
         path_yaw = math.atan2(-(vf_npath2[1]-vf_npath1[1]),-(vf_npath2[0]-vf_npath1[0]))#path compared to vehicle frame
-        head_err = -np.rad2deg(path_yaw)/180 # - because we want positive yaw to to turn left which is negative vice versa
+        head_err = .001*-np.rad2deg(path_yaw)/180 # - because we want positive yaw to to turn left which is negative vice versa
 
         # hd_err = path_yaw * 180 / np.pi
         # head_err = 0

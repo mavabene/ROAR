@@ -17,7 +17,7 @@ class PIDRollController(Controller):
     def __init__(self, agent, steering_boundary: Tuple[float, float],
                  throttle_boundary: Tuple[float, float], **kwargs):
         super().__init__(agent, **kwargs)
-        self.max_speed = math.ceil(1.1*self.agent.agent_settings.max_speed)
+        self.max_speed = math.ceil(1.6*self.agent.agent_settings.max_speed)
         self.throttle_boundary = throttle_boundary
         self.steering_boundary = steering_boundary
         self.config = json.load(Path(agent.agent_settings.pid_config_file_path).open(mode='r'))
@@ -41,11 +41,11 @@ class PIDRollController(Controller):
     @staticmethod
     def find_k_values(vehicle: Vehicle, config: dict) -> np.array:
         current_speed = Vehicle.get_speed(vehicle=vehicle)
-        k_p, k_d, k_i = 1, 0, 0
+        k_p, k_d, k_i = .6, 0.1, 0
         for speed_upper_bound, kvalues in config.items():
             speed_upper_bound = float(speed_upper_bound)
             if current_speed < speed_upper_bound:
-                k_p, k_d, k_i = kvalues["Kp"]*.9, kvalues["Kd"]*.5, kvalues["Ki"]*.5 #******* lowered gain for smoothness
+                k_p, k_d, k_i = kvalues["Kp"]*.4, kvalues["Kd"]*.3, kvalues["Ki"]*.05 #******* lowered gain for smoothness
                 break
         return np.clip([k_p, k_d, k_i], a_min=0, a_max=1)
 
@@ -77,7 +77,8 @@ class LongPIDController(Controller):
 
         #****************** implement look ahead *******************
         la_err = self.la_calcs(next_waypoint)
-        kla = .09
+        # kla = .09
+        kla = 1/11000 # *** calculated ***
 
         if len(self._error_buffer) >= 2:
             # print(self._error_buffer[-1], self._error_buffer[-2])
@@ -90,16 +91,25 @@ class LongPIDController(Controller):
         #                        self.throttle_boundary[1]))
         print(self.agent.vehicle.transform.rotation.roll)
         vehroll = self.agent.vehicle.transform.rotation.roll
-        if current_speed >= (target_speed + 2):
-            out = 1 - .1 * (current_speed - target_speed)
+        if current_speed >= (target_speed + 2):  # *** reduces speed at max limit more smoothly
+            out = 1 - .08 * (current_speed - target_speed)
+        # *** old guesses ***
+        # else:
+        #     if abs(self.agent.vehicle.transform.rotation.roll) <= .35:
+        #         out = 6 * np.exp(-0.05 * np.abs(vehroll))-(la_err/180)*current_speed*kla
+        #     else:
+        #         out = 2 * np.exp(-0.05 * np.abs(vehroll))-(la_err/180)*current_speed*kla # *****ALGORITHM*****
+       # *** calculated formula ***
         else:
-            if abs(self.agent.vehicle.transform.rotation.roll) <= .35:
-                out = 6 * np.exp(-0.05 * np.abs(vehroll))-(la_err/180)*current_speed*kla
+            if abs(self.agent.vehicle.transform.rotation.roll) <= 1.2:
+                out = 2 * np.exp(-.23 * np.abs(vehroll))-la_err*current_speed*kla
             else:
-                out = 2 * np.exp(-0.05 * np.abs(vehroll))-(la_err/180)*current_speed*kla # *****ALGORITHM*****
+                out = np.exp(-.23 * np.abs(vehroll))-la_err*current_speed*kla # *****ALGORITHM*****
 
         output = np.clip(out, a_min=0, a_max=1)
         print('*************')
+        print('vehroll:',vehroll)
+        print('unclipped throttle = ',out)
         print('throttle = ', output)
         print('*************')
 
@@ -113,7 +123,7 @@ class LongPIDController(Controller):
         # *** next points on path
         # *** averaging path points for smooth path vector ***
 
-        la_indx = 10
+        la_indx = 8
         #la_indx = 1 # old ROAR map %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         # next_pathpoint1 = (self.agent.local_planner.way_points_queue[2*cs+1])
         # next_pathpoint2 = (self.agent.local_planner.way_points_queue[2*cs+2])
@@ -122,12 +132,32 @@ class LongPIDController(Controller):
         # next_pathpoint5 = (self.agent.local_planner.way_points_queue[2*cs+92])
         # next_pathpoint6 = (self.agent.local_planner.way_points_queue[2*cs+93])
 
-        next_pathpoint1 = (self.agent.local_planner.way_points_queue[math.ceil((2*cs+1)/la_indx)])
-        next_pathpoint2 = (self.agent.local_planner.way_points_queue[math.ceil((2*cs+2)/la_indx)])
-        next_pathpoint3 = (self.agent.local_planner.way_points_queue[math.ceil((2*cs+3)/la_indx)])
-        next_pathpoint4 = (self.agent.local_planner.way_points_queue[math.ceil((3*cs+51)/la_indx)])
-        next_pathpoint5 = (self.agent.local_planner.way_points_queue[math.ceil((3*cs+52)/la_indx)])
-        next_pathpoint6 = (self.agent.local_planner.way_points_queue[math.ceil((3*cs+53)/la_indx)])
+        # next_pathpoint1 = (self.agent.local_planner.way_points_queue[math.ceil((2*cs+1)/la_indx)])
+        # next_pathpoint2 = (self.agent.local_planner.way_points_queue[math.ceil((2*cs+2)/la_indx)])
+        # next_pathpoint3 = (self.agent.local_planner.way_points_queue[math.ceil((2*cs+3)/la_indx)])
+        # next_pathpoint4 = (self.agent.local_planner.way_points_queue[math.ceil((3*cs+51)/la_indx)])
+        # next_pathpoint5 = (self.agent.local_planner.way_points_queue[math.ceil((3*cs+52)/la_indx)])
+        # next_pathpoint6 = (self.agent.local_planner.way_points_queue[math.ceil((3*cs+53)/la_indx)])
+
+        lf1 = math.ceil(2*cs/la_indx)
+        lf2 = math.ceil(3*cs/la_indx)
+        print ('^^^^^^^^^^^^^^^^^^lf2^^^^^^^^^^^^^^^^^^',lf2)
+        next_pathpoint1 = (self.agent.local_planner.way_points_queue\
+            [self.agent.local_planner.get_curr_waypoint_index()+lf1])
+        next_pathpoint2 = (self.agent.local_planner.way_points_queue\
+            [self.agent.local_planner.get_curr_waypoint_index()+lf1+1])
+        next_pathpoint3 = (self.agent.local_planner.way_points_queue\
+            [self.agent.local_planner.get_curr_waypoint_index()+lf1+2])
+        next_pathpoint4 = (self.agent.local_planner.way_points_queue\
+            [self.agent.local_planner.get_curr_waypoint_index()+lf2+1])
+        next_pathpoint5 = (self.agent.local_planner.way_points_queue\
+            [self.agent.local_planner.get_curr_waypoint_index()+lf2+2])
+        next_pathpoint6 = (self.agent.local_planner.way_points_queue\
+            [self.agent.local_planner.get_curr_waypoint_index()+lf2+3])
+
+        print('next waypoint: ', self.agent.local_planner.way_points_queue[self.agent.local_planner.get_curr_waypoint_index()])
+        print('$$$$$$$$$$$$$way points length: ',len(self.agent.local_planner.way_points_queue))
+
         # ******************************
         # next_pathpoint4 = (self.agent.local_planner.way_points_queue[cs+43])
         # next_pathpoint5 = (self.agent.local_planner.way_points_queue[cs+42])

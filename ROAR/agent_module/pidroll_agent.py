@@ -23,18 +23,18 @@ class PIDRollAgent(Agent):
         # initiated right after mission plan
 
         self.behavior_planner = BehaviorPlanner(agent=self)
-        # self.local_planner = LoopSimpleWaypointFollowingLocalPlanner(
-        #     agent=self,
-        #     controller=self.pidroll_controller,
-        #     mission_planner=self.mission_planner,
-        #     behavior_planner=self.behavior_planner,
-        #     closeness_threshold=1)
-        self.local_planner = SimpleWaypointFollowingLocalPlanner(
+        self.local_planner = LoopSimpleWaypointFollowingLocalPlanner(
             agent=self,
             controller=self.pidroll_controller,
             mission_planner=self.mission_planner,
             behavior_planner=self.behavior_planner,
             closeness_threshold=1)
+        # self.local_planner = SimpleWaypointFollowingLocalPlanner(
+        #     agent=self,
+        #     controller=self.pidroll_controller,
+        #     mission_planner=self.mission_planner,
+        #     behavior_planner=self.behavior_planner,
+        #     closeness_threshold=1)
         self.logger.debug(
             f"Waypoint Following Agent Initiated. Reading f"
             f"rom {self.route_file_path.as_posix()}")
