@@ -17,7 +17,7 @@ class PIDRollController(Controller):
     def __init__(self, agent, steering_boundary: Tuple[float, float],
                  throttle_boundary: Tuple[float, float], **kwargs):
         super().__init__(agent, **kwargs)
-        self.max_speed = math.ceil(1.6*self.agent.agent_settings.max_speed)
+        self.max_speed = math.ceil(2*self.agent.agent_settings.max_speed)
         self.throttle_boundary = throttle_boundary
         self.steering_boundary = steering_boundary
         self.config = json.load(Path(agent.agent_settings.pid_config_file_path).open(mode='r'))
@@ -41,7 +41,7 @@ class PIDRollController(Controller):
     @staticmethod
     def find_k_values(vehicle: Vehicle, config: dict) -> np.array:
         current_speed = Vehicle.get_speed(vehicle=vehicle)
-        k_p, k_d, k_i = .6, 0.1, 0
+        k_p, k_d, k_i = .5, 0.1, 0
         for speed_upper_bound, kvalues in config.items():
             speed_upper_bound = float(speed_upper_bound)
             if current_speed < speed_upper_bound:
@@ -78,7 +78,8 @@ class LongPIDController(Controller):
         #****************** implement look ahead *******************
         la_err = self.la_calcs(next_waypoint)
         # kla = .09
-        kla = 1/11000 # *** calculated ***
+        #kla = 1/11000 # *** calculated ***
+        kla = 1/10500 # *** tuned ***
 
         if len(self._error_buffer) >= 2:
             # print(self._error_buffer[-1], self._error_buffer[-2])
@@ -102,9 +103,9 @@ class LongPIDController(Controller):
        # *** calculated formula ***
         else:
             if abs(self.agent.vehicle.transform.rotation.roll) <= 1.2:
-                out = 2 * np.exp(-.23 * np.abs(vehroll))-la_err*current_speed*kla
+                out = 2 * np.exp(-.03 * np.abs(vehroll))-la_err*current_speed*kla
             else:
-                out = np.exp(-.23 * np.abs(vehroll))-la_err*current_speed*kla # *****ALGORITHM*****
+                out = np.exp(-.03 * np.abs(vehroll))-la_err*current_speed*kla # *****ALGORITHM*****
 
         output = np.clip(out, a_min=0, a_max=1)
         print('*************')
@@ -141,7 +142,7 @@ class LongPIDController(Controller):
 
         lf1 = math.ceil(2*cs/la_indx)
         lf2 = math.ceil(3*cs/la_indx)
-        print ('^^^^^^^^^^^^^^^^^^lf2^^^^^^^^^^^^^^^^^^',lf2)
+        # print ('^^^^^^^^^^^^^^^^^^lf2^^^^^^^^^^^^^^^^^^',lf2)
         next_pathpoint1 = (self.agent.local_planner.way_points_queue\
             [self.agent.local_planner.get_curr_waypoint_index()+lf1])
         next_pathpoint2 = (self.agent.local_planner.way_points_queue\
@@ -156,7 +157,7 @@ class LongPIDController(Controller):
             [self.agent.local_planner.get_curr_waypoint_index()+lf2+3])
 
         print('next waypoint: ', self.agent.local_planner.way_points_queue[self.agent.local_planner.get_curr_waypoint_index()])
-        print('$$$$$$$$$$$$$way points length: ',len(self.agent.local_planner.way_points_queue))
+        print('$$$$$$$$$$$$$way points length: ',self.agent.local_planner.get_curr_waypoint_index(),'/',len(self.agent.local_planner.way_points_queue))
 
         # ******************************
         # next_pathpoint4 = (self.agent.local_planner.way_points_queue[cs+43])
@@ -178,8 +179,7 @@ class LongPIDController(Controller):
         nz1 = (next_pathpoint1.location.z + next_pathpoint2.location.z + next_pathpoint3.location.z) / 3
         nx2 = (next_pathpoint4.location.x + next_pathpoint5.location.x + next_pathpoint6.location.x) / 3
         nz2 = (next_pathpoint4.location.z + next_pathpoint5.location.z + next_pathpoint6.location.z) / 3
-        print('next waypoint: ', self.agent.local_planner.way_points_queue[0])
-        print('$$$$$$$$$$$$$way points length: ',len(self.agent.local_planner.way_points_queue))
+
         npath0 = np.transpose(np.array([nx0, nz0, 1]))
         npath = np.transpose(np.array([nx, nz, 1]))
         npath1 = np.transpose(np.array([nx1, nz1, 1]))

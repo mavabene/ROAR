@@ -13,7 +13,7 @@ import logging
 
 
 class PIDRollAgent(Agent):
-    def __init__(self, target_speed=160, **kwargs):
+    def __init__(self, target_speed=200, **kwargs):
         super().__init__(**kwargs)
         self.target_speed = target_speed
         self.logger = logging.getLogger("PID Agent")

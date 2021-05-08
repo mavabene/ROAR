@@ -18,10 +18,13 @@ from ROAR.agent_module.pidroll_agent import PIDRollAgent
 
 from ROAR.agent_module.pid_agent import PIDAgent
 
+# *** old CARLA ***
+# def compute_score(carla_runner: CarlaRunner, min_bounding_box=np.array([5, -5, 0]),
+#                   max_bounding_box=np.array([13, 5, 50])) -> Tuple[float, int, int]:
 
-def compute_score(carla_runner: CarlaRunner, min_bounding_box=np.array([5, -5, 0]),
-                  max_bounding_box=np.array([13, 5, 50])) -> Tuple[float, int, int]:
-
+#*** new CARLA
+def compute_score(carla_runner: CarlaRunner, min_bounding_box=np.array([-815, 20, -760]),
+                  max_bounding_box=np.array([-770, 120, -600])) -> Tuple[float, int, int]:
     """
     Calculates the score of the vehicle upon completion of the track based on certain metrics
     Args:
