@@ -106,10 +106,10 @@ def main():
     # agent_class = JAM1Agent_old
     # num_trials = 3
 
-    agent_class = PIDRollAgent
-    num_trials = 1
-    # agent_class = PIDAgent
+    # agent_class = PIDRollAgent
     # num_trials = 1
+    agent_class = PIDAgent
+    num_trials = 1
 
     total_score = 0
     num_laps = 1

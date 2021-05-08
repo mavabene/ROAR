@@ -17,7 +17,7 @@ class PIDController(Controller):
     def __init__(self, agent, steering_boundary: Tuple[float, float],
                  throttle_boundary: Tuple[float, float], **kwargs):
         super().__init__(agent, **kwargs)
-        self.max_speed = math.ceil(1.2*self.agent.agent_settings.max_speed)
+        self.max_speed = math.ceil(1.25*self.agent.agent_settings.max_speed)
         self.throttle_boundary = throttle_boundary
         self.steering_boundary = steering_boundary
         self.config = json.load(Path(agent.agent_settings.pid_config_file_path).open(mode='r'))
@@ -38,6 +38,7 @@ class PIDController(Controller):
         steering = self.lat_pid_controller.run_in_series(next_waypoint=next_waypoint)
         return VehicleControl(throttle=throttle, steering=steering)
 
+    # *** old ***
     @staticmethod
     def find_k_values(vehicle: Vehicle, config: dict) -> np.array:
         current_speed = Vehicle.get_speed(vehicle=vehicle)
@@ -45,19 +46,66 @@ class PIDController(Controller):
         for speed_upper_bound, kvalues in config.items():
             speed_upper_bound = float(speed_upper_bound)
             if current_speed < speed_upper_bound:
-                k_p, k_d, k_i = kvalues["Kp"]*.9, kvalues["Kd"]*.5, kvalues["Ki"]*.5 #******* lowered gain for smoothness
+                k_p, k_d, k_i = kvalues["Kp"]*.8, kvalues["Kd"]*.5, kvalues["Ki"]*.5 #******* lowered gain for smoothness
                 break
         return np.clip([k_p, k_d, k_i], a_min=0, a_max=1)
 
+    # *** 210507 ***
+    # @staticmethod
+    # def find_k_values(vehicle: Vehicle, config: dict) -> np.array:
+    #     current_speed = Vehicle.get_speed(vehicle=vehicle)
+    #     k_p, k_d, k_i = .4, 0.1, 0
+    #     for speed_upper_bound, kvalues in config.items():
+    #         speed_upper_bound = float(speed_upper_bound)
+    #         if current_speed < speed_upper_bound:
+    #             k_p, k_d, k_i = kvalues["Kp"]*.3, kvalues["Kd"]*.1, kvalues["Ki"]*.05 #******* lowered gain for smoothness
+    #             break
+    #     return np.clip([k_p, k_d, k_i], a_min=0, a_max=1)
 
+# *** old ***
+# class LongPIDController(Controller):
+#     def __init__(self, agent, config: dict, throttle_boundary: Tuple[float, float], max_speed: float,
+#                  dt: float = 0.03, **kwargs):
+#         super().__init__(agent, **kwargs)
+#         self.config = config
+#         self.max_speed = max_speed #******
+#         #self.max_speed = 80 #***** for occupancy agent
+#
+#         self.throttle_boundary = throttle_boundary
+#         self._error_buffer = deque(maxlen=10)
+#
+#         self._dt = dt
+#
+#     def run_in_series(self, next_waypoint: Transform, **kwargs) -> float:
+#         target_speed = min(self.max_speed, kwargs.get("target_speed", self.max_speed))
+#         current_speed = Vehicle.get_speed(self.agent.vehicle)
+#
+#         k_p, k_d, k_i = PIDController.find_k_values(vehicle=self.agent.vehicle, config=self.config)
+#         error = target_speed - current_speed
+#         print('Speed limit:', target_speed)
+#         self._error_buffer.append(error)
+#
+#         if len(self._error_buffer) >= 2:
+#             # print(self._error_buffer[-1], self._error_buffer[-2])
+#             _de = (self._error_buffer[-2] - self._error_buffer[-1]) / self._dt
+#             _ie = sum(self._error_buffer) * self._dt
+#         else:
+#             _de = 0.0
+#             _ie = 0.0
+#         output = float(np.clip((k_p * error) + (k_d * _de) + (k_i * _ie), self.throttle_boundary[0],
+#                                self.throttle_boundary[1]))
+#         # self.logger.debug(f"curr_speed: {round(current_speed, 2)} | kp: {round(k_p, 2)} | kd: {k_d} | ki = {k_i} | "
+#         #       f"err = {round(error, 2)} | de = {round(_de, 2)} | ie = {round(_ie, 2)}")
+#               # f"self._error_buffer[-1] {self._error_buffer[-1]} | self._error_buffer[-2] = {self._error_buffer[-2]}")
+#         return output
+
+# *** 210507 ***
 class LongPIDController(Controller):
     def __init__(self, agent, config: dict, throttle_boundary: Tuple[float, float], max_speed: float,
                  dt: float = 0.03, **kwargs):
         super().__init__(agent, **kwargs)
         self.config = config
-        self.max_speed = max_speed #******
-        #self.max_speed = 80 #***** for occupancy agent
-
+        self.max_speed = max_speed
         self.throttle_boundary = throttle_boundary
         self._error_buffer = deque(maxlen=10)
 
@@ -65,12 +113,22 @@ class LongPIDController(Controller):
 
     def run_in_series(self, next_waypoint: Transform, **kwargs) -> float:
         target_speed = min(self.max_speed, kwargs.get("target_speed", self.max_speed))
+        # self.logger.debug(f"Target_Speed: {target_speed} | max_speed = {self.max_speed}")
         current_speed = Vehicle.get_speed(self.agent.vehicle)
+
+        print('max speed: ',self.max_speed)
 
         k_p, k_d, k_i = PIDController.find_k_values(vehicle=self.agent.vehicle, config=self.config)
         error = target_speed - current_speed
-        print('Speed limit:', target_speed)
+
         self._error_buffer.append(error)
+
+
+        #****************** implement look ahead *******************
+        la_err = 0
+        # kla = .09
+        #kla = 1/11000 # *** calculated ***
+        kla = 1/10500 # *** tuned ***
 
         if len(self._error_buffer) >= 2:
             # print(self._error_buffer[-1], self._error_buffer[-2])
@@ -79,13 +137,34 @@ class LongPIDController(Controller):
         else:
             _de = 0.0
             _ie = 0.0
-        output = float(np.clip((k_p * error) + (k_d * _de) + (k_i * _ie), self.throttle_boundary[0],
-                               self.throttle_boundary[1]))
-        # self.logger.debug(f"curr_speed: {round(current_speed, 2)} | kp: {round(k_p, 2)} | kd: {k_d} | ki = {k_i} | "
-        #       f"err = {round(error, 2)} | de = {round(_de, 2)} | ie = {round(_ie, 2)}")
-              # f"self._error_buffer[-1] {self._error_buffer[-1]} | self._error_buffer[-2] = {self._error_buffer[-2]}")
-        return output
+        # output = float(np.clip((k_p * error) + (k_d * _de) + (k_i * _ie), self.throttle_boundary[0],
+        #                        self.throttle_boundary[1]))
+        print(self.agent.vehicle.transform.rotation.roll)
+        vehroll = self.agent.vehicle.transform.rotation.roll
+        if current_speed >= (target_speed + 2):  # *** reduces speed at max limit more smoothly
+            out = 1 - .08 * (current_speed - target_speed)
+        # *** old guesses ***
+        # else:
+        #     if abs(self.agent.vehicle.transform.rotation.roll) <= .35:
+        #         out = 6 * np.exp(-0.05 * np.abs(vehroll))-(la_err/180)*current_speed*kla
+        #     else:
+        #         out = 2 * np.exp(-0.05 * np.abs(vehroll))-(la_err/180)*current_speed*kla # *****ALGORITHM*****
+       # *** calculated formula ***
+        else:
+            if abs(self.agent.vehicle.transform.rotation.roll) <= 1.2:
+                out = 2 * np.exp(-.3 * np.abs(vehroll))-la_err*current_speed*kla
+            else:
+                out = np.exp(-.3 * np.abs(vehroll))-la_err*current_speed*kla # *****ALGORITHM*****
 
+        output = np.clip(out, a_min=0, a_max=1)
+        print('*************')
+        print('vehroll:',vehroll)
+        print('unclipped throttle = ',out)
+        print('throttle = ', output)
+        print('*************')
+
+
+        return output
 
 class LatPIDController(Controller):
     def __init__(self, agent, config: dict, steering_boundary: Tuple[float, float],

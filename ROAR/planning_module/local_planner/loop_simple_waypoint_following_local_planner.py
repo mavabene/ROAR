@@ -26,7 +26,7 @@ class LoopSimpleWaypointFollowingLocalPlanner(LocalPlanner):
             controller: Controller,
             mission_planner: MissionPlanner,
             behavior_planner: BehaviorPlanner,
-            closeness_threshold=0.5,
+            closeness_threshold=1.5,
     ):
         """
         Initialize Simple Waypoint Following Planner
@@ -80,7 +80,9 @@ class LoopSimpleWaypointFollowingLocalPlanner(LocalPlanner):
         curr_closest_dist = float("inf")
         while True:
             if len(self.way_points_queue) == self._curr_waypoint_index:
-                self._curr_waypoint_index = 0 + 40  # this is so that i don't actually just look at the zeroth one
+                # self._curr_waypoint_index = 0 + 40  # fine waypoints this is so that i don't actually just look at the zeroth one
+                # # when i loop back
+                self._curr_waypoint_index = 0 + 10  # coarse waypoints this is so that i don't actually just look at the zeroth one
                 # when i loop back
             waypoint: Transform = self.way_points_queue[self._curr_waypoint_index]
             curr_dist = vehicle_transform.location.distance(waypoint.location)

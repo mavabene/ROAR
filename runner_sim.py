@@ -37,12 +37,12 @@ def main():
         my_vehicle = carla_runner.set_carla_world()
 
 
-        #agent = PIDAgent(vehicle=my_vehicle, agent_settings=agent_config)
+        agent = PIDAgent(vehicle=my_vehicle, agent_settings=agent_config)
         #agent = OccupancyMapAgent(vehicle=my_vehicle, agent_settings=agent_config)
         #agent = PurePursuitAgent(vehicle=my_vehicle, agent_settings=agent_config)
 
         #agent = JAM1Agent_old(vehicle=my_vehicle, agent_settings=agent_config)  # *** roll controller
-        agent = PIDRollAgent(vehicle=my_vehicle, agent_settings=agent_config)  # *** roll controller/pid
+        #agent = PIDRollAgent(vehicle=my_vehicle, agent_settings=agent_config)  # *** roll controller/pid
 
         #agent = JAM1Agent(vehicle=my_vehicle, agent_settings=agent_config)
         #agent = JAM2Agent(vehicle=my_vehicle, agent_settings=agent_config)
