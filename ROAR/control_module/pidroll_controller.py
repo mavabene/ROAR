@@ -79,7 +79,7 @@ class LongPIDController(Controller):
         la_err = self.la_calcs(next_waypoint)
         # kla = .09
         #kla = 1/11000 # *** calculated ***
-        kla = 1/10500 # *** tuned ***
+        kla = 1/10000 # *** tuned ***
 
         if len(self._error_buffer) >= 2:
             # print(self._error_buffer[-1], self._error_buffer[-2])
@@ -105,7 +105,7 @@ class LongPIDController(Controller):
             if abs(self.agent.vehicle.transform.rotation.roll) <= 1.2:
                 out = 2 * np.exp(-.03 * np.abs(vehroll))-la_err*current_speed*kla
             else:
-                out = np.exp(-.03 * np.abs(vehroll))-la_err*current_speed*kla # *****ALGORITHM*****
+                out = np.exp(-.06 * np.abs(vehroll))-la_err*current_speed*kla # *****ALGORITHM*****
 
         output = np.clip(out, a_min=0, a_max=1)
         print('*************')
@@ -124,7 +124,8 @@ class LongPIDController(Controller):
         # *** next points on path
         # *** averaging path points for smooth path vector ***
 
-        la_indx = 8
+        #la_indx = 8
+        la_indx = 43 #coarse points
         #la_indx = 1 # old ROAR map %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         # next_pathpoint1 = (self.agent.local_planner.way_points_queue[2*cs+1])
         # next_pathpoint2 = (self.agent.local_planner.way_points_queue[2*cs+2])
@@ -143,56 +144,66 @@ class LongPIDController(Controller):
         lf1 = math.ceil(2*cs/la_indx)
         lf2 = math.ceil(3*cs/la_indx)
         # print ('^^^^^^^^^^^^^^^^^^lf2^^^^^^^^^^^^^^^^^^',lf2)
-        next_pathpoint1 = (self.agent.local_planner.way_points_queue\
-            [self.agent.local_planner.get_curr_waypoint_index()+lf1])
-        next_pathpoint2 = (self.agent.local_planner.way_points_queue\
-            [self.agent.local_planner.get_curr_waypoint_index()+lf1+1])
-        next_pathpoint3 = (self.agent.local_planner.way_points_queue\
-            [self.agent.local_planner.get_curr_waypoint_index()+lf1+2])
-        next_pathpoint4 = (self.agent.local_planner.way_points_queue\
-            [self.agent.local_planner.get_curr_waypoint_index()+lf2+1])
-        next_pathpoint5 = (self.agent.local_planner.way_points_queue\
-            [self.agent.local_planner.get_curr_waypoint_index()+lf2+2])
-        next_pathpoint6 = (self.agent.local_planner.way_points_queue\
-            [self.agent.local_planner.get_curr_waypoint_index()+lf2+3])
+        print ('+++++++++++ curr wp indx: ',self.agent.local_planner.get_curr_waypoint_index()+lf2+4)
+        print ('length wp queue',len(self.agent.local_planner.way_points_queue) )
+        if self.agent.local_planner.get_curr_waypoint_index()+lf2+4<=\
+            len(self.agent.local_planner.way_points_queue):
 
-        print('next waypoint: ', self.agent.local_planner.way_points_queue[self.agent.local_planner.get_curr_waypoint_index()])
-        print('$$$$$$$$$$$$$way points length: ',self.agent.local_planner.get_curr_waypoint_index(),'/',len(self.agent.local_planner.way_points_queue))
+            next_pathpoint1 = (self.agent.local_planner.way_points_queue\
+                [self.agent.local_planner.get_curr_waypoint_index()+lf1])
+            next_pathpoint2 = (self.agent.local_planner.way_points_queue\
+                [self.agent.local_planner.get_curr_waypoint_index()+lf1+1])
+            next_pathpoint3 = (self.agent.local_planner.way_points_queue\
+                [self.agent.local_planner.get_curr_waypoint_index()+lf1+2])
+            next_pathpoint4 = (self.agent.local_planner.way_points_queue\
+                [self.agent.local_planner.get_curr_waypoint_index()+lf2+1])
+            next_pathpoint5 = (self.agent.local_planner.way_points_queue\
+                [self.agent.local_planner.get_curr_waypoint_index()+lf2+2])
+            next_pathpoint6 = (self.agent.local_planner.way_points_queue\
+                [self.agent.local_planner.get_curr_waypoint_index()+lf2+3])
 
-        # ******************************
-        # next_pathpoint4 = (self.agent.local_planner.way_points_queue[cs+43])
-        # next_pathpoint5 = (self.agent.local_planner.way_points_queue[cs+42])
-        # next_pathpoint6 = (self.agent.local_planner.way_points_queue[cs+41])
-        # next_pathpoint1 = (self.agent.local_planner.way_points_queue[31])
-        # next_pathpoint2 = (self.agent.local_planner.way_points_queue[32])
-        # next_pathpoint3 = (self.agent.local_planner.way_points_queue[33])
-        # next_pathpoint4 = (self.agent.local_planner.way_points_queue[52])
-        # next_pathpoint5 = (self.agent.local_planner.way_points_queue[53])
-        # next_pathpoint6 = (self.agent.local_planner.way_points_queue[54])
-        nx0 = next_pathpoint1.location.x
-        nz0 = next_pathpoint1.location.z
-        nx = (
-                         next_pathpoint1.location.x + next_pathpoint2.location.x + next_pathpoint3.location.x + next_pathpoint4.location.x + next_pathpoint5.location.x + next_pathpoint6.location.x) / 6
-        nz = (
-                         next_pathpoint1.location.z + next_pathpoint2.location.z + next_pathpoint3.location.z + next_pathpoint4.location.z + next_pathpoint5.location.z + next_pathpoint6.location.z) / 6
-        nx1 = (next_pathpoint1.location.x + next_pathpoint2.location.x + next_pathpoint3.location.x) / 3
-        nz1 = (next_pathpoint1.location.z + next_pathpoint2.location.z + next_pathpoint3.location.z) / 3
-        nx2 = (next_pathpoint4.location.x + next_pathpoint5.location.x + next_pathpoint6.location.x) / 3
-        nz2 = (next_pathpoint4.location.z + next_pathpoint5.location.z + next_pathpoint6.location.z) / 3
 
-        npath0 = np.transpose(np.array([nx0, nz0, 1]))
-        npath = np.transpose(np.array([nx, nz, 1]))
-        npath1 = np.transpose(np.array([nx1, nz1, 1]))
-        npath2 = np.transpose(np.array([nx2, nz2, 1]))
+            print('next waypoint: ', self.agent.local_planner.way_points_queue[self.agent.local_planner.get_curr_waypoint_index()])
+            print('$$$$$$$$$$$$$way points length: ',self.agent.local_planner.get_curr_waypoint_index(),'/',len(self.agent.local_planner.way_points_queue))
 
-        path_yaw_rad = -(math.atan2((nx2 - nx1), -(nz2 - nz1)))
+            # ******************************
+            # next_pathpoint4 = (self.agent.local_planner.way_points_queue[cs+43])
+            # next_pathpoint5 = (self.agent.local_planner.way_points_queue[cs+42])
+            # next_pathpoint6 = (self.agent.local_planner.way_points_queue[cs+41])
+            # next_pathpoint1 = (self.agent.local_planner.way_points_queue[31])
+            # next_pathpoint2 = (self.agent.local_planner.way_points_queue[32])
+            # next_pathpoint3 = (self.agent.local_planner.way_points_queue[33])
+            # next_pathpoint4 = (self.agent.local_planner.way_points_queue[52])
+            # next_pathpoint5 = (self.agent.local_planner.way_points_queue[53])
+            # next_pathpoint6 = (self.agent.local_planner.way_points_queue[54])
+            nx0 = next_pathpoint1.location.x
+            nz0 = next_pathpoint1.location.z
+            nx = (
+                             next_pathpoint1.location.x + next_pathpoint2.location.x + next_pathpoint3.location.x + next_pathpoint4.location.x + next_pathpoint5.location.x + next_pathpoint6.location.x) / 6
+            nz = (
+                             next_pathpoint1.location.z + next_pathpoint2.location.z + next_pathpoint3.location.z + next_pathpoint4.location.z + next_pathpoint5.location.z + next_pathpoint6.location.z) / 6
+            nx1 = (next_pathpoint1.location.x + next_pathpoint2.location.x + next_pathpoint3.location.x) / 3
+            nz1 = (next_pathpoint1.location.z + next_pathpoint2.location.z + next_pathpoint3.location.z) / 3
+            nx2 = (next_pathpoint4.location.x + next_pathpoint5.location.x + next_pathpoint6.location.x) / 3
+            nz2 = (next_pathpoint4.location.z + next_pathpoint5.location.z + next_pathpoint6.location.z) / 3
 
-        path_yaw = path_yaw_rad * 180 / np.pi
-        print(' !!! path yaw !!! ', path_yaw)
+            npath0 = np.transpose(np.array([nx0, nz0, 1]))
+            npath = np.transpose(np.array([nx, nz, 1]))
+            npath1 = np.transpose(np.array([nx1, nz1, 1]))
+            npath2 = np.transpose(np.array([nx2, nz2, 1]))
 
-        veh_yaw = self.agent.vehicle.transform.rotation.yaw
-        print(' !!! veh yaw  !!! ', veh_yaw)
-        ahead_err = abs(abs(path_yaw)-abs(veh_yaw))
+            path_yaw_rad = -(math.atan2((nx2 - nx1), -(nz2 - nz1)))
+
+            path_yaw = path_yaw_rad * 180 / np.pi
+            print(' !!! path yaw !!! ', path_yaw)
+
+            veh_yaw = self.agent.vehicle.transform.rotation.yaw
+            print(' !!! veh yaw  !!! ', veh_yaw)
+            ahead_err = abs(abs(path_yaw)-abs(veh_yaw))
+
+        else:
+            ahead_err = 105
+
         if ahead_err < 60:
             la_err = 0
         else:
